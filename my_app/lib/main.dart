@@ -26,7 +26,7 @@ class MyApp extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (context) => MyAppState(),
       child: MaterialApp(
-        title: 'Peli Fiction', // Tñitulo
+        title: 'Peli Fiction', // Título de la aplicación
         theme: ThemeData(
           useMaterial3: true,
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.lightBlueAccent),
@@ -42,9 +42,23 @@ class MyAppState extends ChangeNotifier {
   // Selecciona de manera aleatoria la película inicial
   var current = movie.random();
 
+  // Lista para almacenar las películas que van saliendo
+  List<String> history = [];
+  GlobalKey? historyListKey;
+
   // Selecciona de manera aleatoria la película siguiente a mostrar
   void getNext() {
+    if (!history.contains(current)) {
+      history.insert(0, current);
+      var animatedList = historyListKey?.currentState as AnimatedListState?;
+      animatedList?.insertItem(0);
+    }
     current = movie.random();
+    notifyListeners();
+  }
+
+  void setCurrent(String movie) {
+    current = movie;
     notifyListeners();
   }
 
@@ -94,7 +108,7 @@ class MyAppState extends ChangeNotifier {
     if (current == movie) {
       getNext();
     }
-    if(favorites.contains(movie)) {
+    if (favorites.contains(movie)) {
       removeFavorite(movie);
     }
     if (pending.contains(movie)) {
@@ -105,17 +119,14 @@ class MyAppState extends ChangeNotifier {
 
   // Función para añadir una película por nombre
   void addMovie(String movie) {
-      movies.add(movie);
-      movies.sort();
-      notifyListeners();                   
+    movies.add(movie);
+    movies.sort();
+    notifyListeners();
   }
 }
 
 // Clase que gestiona las películas
 class Movie {
-  // Variable que almacena la película actual
-  var current = "";
-
   // Función para leer el csv y almacenar las películas en una lista
   Future<void> loadMovieNamesFromCsv() async {
     // Ruta del archivo CSV
@@ -183,7 +194,8 @@ class _MyHomePageState extends State<MyHomePage> {
         page = MovieListPage();
         break;
       default:
-        throw UnimplementedError('No hay elementos para el índice $selectedIndex');
+        throw UnimplementedError(
+            'No hay elementos para el índice $selectedIndex');
     }
 
     // Widget para construir la estructura general de la aplicación
@@ -352,6 +364,11 @@ class GeneratorPage extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Expanded(
+              flex: 3,
+              child: HistoryListView(),
+            ),
+            SizedBox(height: 10),
             BigCard(movie: movie),
             SizedBox(height: 10),
             Row(
@@ -375,7 +392,7 @@ class GeneratorPage extends StatelessWidget {
                   label: Text('Pendiente'),
                 ),
                 SizedBox(width: 10),
-                // Botón de siguiente 
+                // Botón de siguiente
                 ElevatedButton(
                   onPressed: () {
                     appState.getNext();
@@ -384,6 +401,7 @@ class GeneratorPage extends StatelessWidget {
                 ),
               ],
             ),
+            Spacer(flex: 3),
           ],
         ),
       )
@@ -410,12 +428,14 @@ class BigCard extends StatelessWidget {
     return Card(
       color: theme.colorScheme.primary,
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Text(
-          movie,
-          style: style,
-        ),
-      ),
+          padding: const EdgeInsets.all(20.0),
+          child: AnimatedSize(
+            duration: Duration(milliseconds: 200),
+            child: Text(
+              movie,
+              style: style,
+            ),
+          )),
     );
   }
 }
@@ -454,7 +474,7 @@ class FavoritesPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Lista de elementos en favoritos con icono y botón 
+                    // Lista de elementos en favoritos con icono y botón
                     for (var movie in favorites)
                       ListTile(
                         leading: Icon(Icons.favorite, color: Colors.white),
@@ -462,18 +482,18 @@ class FavoritesPage extends StatelessWidget {
                             style:
                                 TextStyle(fontSize: 24, color: Colors.white)),
                         trailing: IconButton(
-                            icon: Icon(Icons.delete, color: Colors.white),
-                            onPressed: () {
-                              appState.removeFavorite(movie);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    backgroundColor: Colors.blueGrey,
-                                    content: Text(
-                                      'La película se ha eliminado de favoritos.',
-                                    ),
-                                  ),
-                              );
-                            },
+                          icon: Icon(Icons.delete, color: Colors.white),
+                          onPressed: () {
+                            appState.removeFavorite(movie);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                backgroundColor: Colors.blueGrey,
+                                content: Text(
+                                  'La película se ha eliminado de favoritos.',
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       )
                   ]),
@@ -519,31 +539,32 @@ class PendingPage extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Lista de elementos en favoritos con icono y botón 
+                    // Lista de elementos en favoritos con icono y botón
                     for (var movie in pending)
                       ListTile(
-                        leading: Icon(Icons.bookmark_added, color: Colors.white),
+                        leading:
+                            Icon(Icons.bookmark_added, color: Colors.white),
                         title: Text(movie,
                             style:
                                 TextStyle(fontSize: 24, color: Colors.white)),
                         trailing: IconButton(
-                            icon: Icon(Icons.delete, color: Colors.white),
-                            onPressed: () {
-                              appState.removePending(movie);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    backgroundColor: Colors.blueGrey,
-                                    content: Text(
-                                      'La película se ha eliminado de pendientes.',
-                                    ),
-                                  ),
-                              );
-                            },
+                          icon: Icon(Icons.delete, color: Colors.white),
+                          onPressed: () {
+                            appState.removePending(movie);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                backgroundColor: Colors.blueGrey,
+                                content: Text(
+                                  'La película se ha eliminado de pendientes.',
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       )
                   ]),
                 ),
-                SizedBox(width: 680),
+                SizedBox(width: 750),
               ]),
         ],
       ),
@@ -626,31 +647,28 @@ class _MovieListPageState extends State<MovieListPage> {
                           ElevatedButton(
                             onPressed: () {
                               String newMovie = _movieController.text.trim();
-                              if (newMovie.isNotEmpty) {   
+                              if (newMovie.isNotEmpty) {
                                 String movieToAdd = capitalize(newMovie);
-                                print(newMovie);
-                                print(movieToAdd);
-                                print(movies.contains(movieToAdd));
-                                if (!movies.contains(movieToAdd)) {                         
+                                if (!movies.contains(movieToAdd)) {
                                   appState.addMovie(movieToAdd);
                                   _movieController.clear();
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    backgroundColor: Colors.blueGrey,
-                                    content: Text(
-                                      'La película se ha añadido correctamente.',
+                                    SnackBar(
+                                      backgroundColor: Colors.blueGrey,
+                                      content: Text(
+                                        'La película se ha añadido correctamente.',
+                                      ),
                                     ),
-                                  ),
                                   );
                                 } else {
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    backgroundColor: Colors.blueGrey,
-                                    content: Text(
-                                      'ERROR: La película ya está en la lista.',
+                                    SnackBar(
+                                      backgroundColor: Colors.blueGrey,
+                                      content: Text(
+                                        'ERROR: La película ya está en la lista.',
+                                      ),
                                     ),
-                                  ),
-                                );
+                                  );
                                 }
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -686,24 +704,25 @@ class _MovieListPageState extends State<MovieListPage> {
                             // Elementos de la lista
                             for (var movie in movies)
                               ListTile(
-                                leading:
-                                    Icon(Icons.movie_filter, color: Colors.white),
+                                leading: Icon(Icons.movie_filter,
+                                    color: Colors.white),
                                 title: Text(
                                   movie,
-                                  style: TextStyle(fontSize: 24, color: Colors.white),
+                                  style: TextStyle(
+                                      fontSize: 24, color: Colors.white),
                                 ),
                                 trailing: IconButton(
                                   icon: Icon(Icons.delete, color: Colors.white),
                                   onPressed: () {
                                     appState.removeMovie(movie);
                                     ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    backgroundColor: Colors.blueGrey,
-                                    content: Text(
-                                      'La película se ha eliminado.',
-                                    ),
-                                  ),
-                              );
+                                      SnackBar(
+                                        backgroundColor: Colors.blueGrey,
+                                        content: Text(
+                                          'La película se ha eliminado.',
+                                        ),
+                                      ),
+                                    );
                                   },
                                 ),
                               ),
@@ -727,8 +746,79 @@ String capitalize(String newMovie) {
   List<String> words = newMovie.split(' ');
   String movie = "";
   for (String word in words) {
-    movie += "${word.substring(0, 1).toUpperCase()}${word.substring(1).toLowerCase()} ";
+    movie +=
+        "${word.substring(0, 1).toUpperCase()}${word.substring(1).toLowerCase()} ";
   }
 
   return movie.trim();
+}
+
+class HistoryListView extends StatefulWidget {
+  const HistoryListView({super.key});
+  @override
+  State<HistoryListView> createState() => _HistoryListViewState();
+}
+
+class _HistoryListViewState extends State<HistoryListView> {
+  final _key = GlobalKey();
+
+  static const Gradient _maskingGradient = LinearGradient(
+    colors: [Colors.transparent, Colors.black],
+    stops: [0.0, 0.5],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final appState = context.watch<MyAppState>();
+    appState.historyListKey = _key;
+
+    return ShaderMask(
+      shaderCallback: (bounds) => _maskingGradient.createShader(bounds),
+      blendMode: BlendMode.dstIn,
+      child: AnimatedList(
+        key: _key,
+        reverse: true,
+        padding: EdgeInsets.only(top: 100),
+        initialItemCount: appState.history.length,
+        itemBuilder: ((context, index, animation) {
+          var movie = appState.history[index];
+          return SizeTransition(
+              sizeFactor: animation,
+              child: Row(children: [
+                Spacer(),
+                TextButton.icon(
+                  onPressed: () {
+                    appState.getNext();
+                    appState.setCurrent(movie);
+                  },
+                  icon: appState.favorites.contains(movie)
+                      ? Icon(
+                          Icons.favorite,
+                          size: 12,
+                          color: Colors.white,
+                        )
+                      : SizedBox(),
+                  label: Row(
+                    children: [
+                      Text(
+                        movie,
+                        style: TextStyle(fontSize: 24, color: Colors.white),
+                      ),
+                      if (appState.pending.contains(movie))
+                        Icon(
+                          Icons.bookmark_added,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                    ],
+                  ),
+                ),
+                Spacer(),
+              ]));
+        }),
+      ),
+    );
+  }
 }
